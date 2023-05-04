@@ -1,5 +1,7 @@
 import React from "react";
 import styled from "@emotion/styled";
+import { createStore } from 'redux';
+import { Provider, useSelector, useDispatch } from 'react-redux';
 
 import "./App.css";
 
@@ -7,9 +9,14 @@ import PokemonInfo from "./components/PokemonInfo";
 import PokemonTable from "./components/PokemonTable";
 import PokemonFilter from "./components/PokemonFilter";
 
-import PokemonContext from "./PokemonContext";
-
-const pokemonReducer = (state, action) => {
+const pokemonReducer = (
+  state = {
+    pokemon: [],
+    filter: "",
+    selectedPokemon: null,
+  },
+  action
+) => {
   switch (action.type) {
     case "SET_FILTER":
       return {
@@ -27,9 +34,11 @@ const pokemonReducer = (state, action) => {
         selectedPokemon: action.payload,
       };
     default:
-      throw new Error("No action");
+      return state;
   }
 };
+
+const store = createStore(pokemonReducer);
 
 const Title = styled.h1`
   text-align: center;
@@ -48,15 +57,12 @@ const Container = styled.div`
 `;
 
 function App() {
-  
-  const [state, dispatch] = React.useReducer(pokemonReducer, {
-    pokemon: [],
-    filter: "",
-    selectedPokemon: null,
-  });
+
+  const dispatch = useDispatch();
+  const pokemon = useSelector(state => state.pokemon);
 
   React.useEffect(() => {
-    fetch("http://localhost:3000/starting-react/pokemon.json")
+    fetch("/starting-react/pokemon.json")
       .then((resp) => resp.json())
       .then((data) =>
         dispatch({
@@ -64,19 +70,13 @@ function App() {
           payload: data,
         })
       );
-  }, []);
+  }, [dispatch]);
 
-  if (!state.pokemon){
-    return <div>Loading data</div>
+  if (!pokemon) {
+    return <div>Loading data</div>;
   }
 
   return (
-    <PokemonContext.Provider
-      value={{
-        state,
-        dispatch,
-      }}
-    >
       <Container>
         <Title>Pokemon Search</Title>
 
@@ -88,8 +88,12 @@ function App() {
           <PokemonInfo />
         </TwoColumnLayout>
       </Container>
-    </PokemonContext.Provider>
   );
 }
 
-export default App;
+// eslint-disable-next-line import/no-anonymous-default-export
+export default () => (
+  <Provider store={store}>
+    <App />
+  </Provider>
+);
